@@ -70,5 +70,6 @@ class Memory:
     final_stats:   Dict[str, Any]
     sample_size:   int
     confidence:    float
+    context:       Dict[str, Any] = field(default_factory=dict)
     id:            Optional[int] = None
     created_at:    datetime      = field(default_factory=_now)

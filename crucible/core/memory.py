@@ -11,7 +11,7 @@ from crucible.core.vocabulary import Candidate, Memory, VerdictRecord
 
 
 def dna_signature(dna: Dict[str, Any],
-                  keys: tuple = ("strategy", "timeframe", "regime", "adapter")) -> str:
+                  keys: tuple = ("strategy", "timeframe", "adapter")) -> str:
     """Hash only structural DNA keys — variants of same strategy share memory."""
     structural = {k: dna[k] for k in keys if k in dna}
     serialized = json.dumps(structural, sort_keys=True)
@@ -33,6 +33,7 @@ def write_death_certificate(candidate: Candidate,
         final_stats=verdict.stats,
         sample_size=verdict.evidence_count,
         confidence=verdict.confidence,
+        context={"regime": candidate.dna.get("regime")},
     )
 
 
