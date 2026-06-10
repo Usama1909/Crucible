@@ -31,12 +31,15 @@ class HonestyGate:
     def evaluate(self,
                  candidate_id: int,
                  outcomes: List[Outcome],
-                 n_candidates: int) -> VerdictRecord:
+                 n_candidates: int,
+                 min_outcomes: int = None) -> VerdictRecord:
         stats = {}
+        required = min_outcomes if min_outcomes is not None else self.min_outcomes
 
         # Check 1 — enough evidence
-        if len(outcomes) < self.min_outcomes:
-            stats['reason'] = f'insufficient evidence: {len(outcomes)} < {self.min_outcomes}'
+        if len(outcomes) < required:
+            stats['reason'] = f'insufficient evidence: {len(outcomes)} < {required}'
+            stats['min_outcomes_required'] = required
             return VerdictRecord(
                 candidate_id=candidate_id,
                 verdict=Verdict.UNPROVEN,

@@ -33,6 +33,8 @@ class Engine:
         self.max_population = max_population
         self.min_outcomes   = min_outcomes_to_evaluate
         self._degraded_strikes: Dict[int, int] = {}
+        self._weak_streaks: Dict[int, int] = {}
+        self._proven_streaks: Dict[int, int] = {}
         self._pre_dormant: Dict[int, CandidateStatus] = {}
 
     def run_cycle(self,
@@ -77,6 +79,8 @@ class Engine:
                     )
 
                 strikes = self._degraded_strikes.get(candidate.id, 0)
+                weak = self._weak_streaks.get(candidate.id, 0)
+                prov = self._proven_streaks.get(candidate.id, 0)
                 pre_dormant = self._pre_dormant.get(candidate.id)
                 new_status, reason = self.lifecycle.next_status(
                     candidate=candidate,
@@ -84,9 +88,26 @@ class Engine:
                     recent_verdict=recent_verdict,
                     context_match=True,
                     degraded_strikes=strikes,
+                    weak_streak=weak,
+                    proven_streak=prov,
                     pre_dormant_status=pre_dormant
                 )
 
+                # streak/strike bookkeeping — every evaluation, not just transitions
+                weak_now = verdict.verdict in (Verdict.REJECTED, Verdict.UNPROVEN)
+                if new_status == CandidateStatus.PROVEN:
+                    self._weak_streaks[candidate.id] = weak + 1 if weak_now else 0
+                else:
+                    self._weak_streaks.pop(candidate.id, None)
+                if new_status == CandidateStatus.DEGRADED:
+                    if verdict.verdict == Verdict.PROVEN:
+                        self._proven_streaks[candidate.id] = prov + 1
+                    else:
+                        self._proven_streaks[candidate.id] = 0
+                        self._degraded_strikes[candidate.id] = strikes + 1
+                else:
+                    self._proven_streaks.pop(candidate.id, None)
+                    self._degraded_strikes.pop(candidate.id, None)
                 if new_status != candidate.status:
                     report['transitions'].append({
                         'candidate_id': candidate.id,
@@ -101,10 +122,6 @@ class Engine:
                     elif candidate.status == CandidateStatus.DORMANT:
                         self._pre_dormant.pop(candidate.id, None)
 
-                    if new_status == CandidateStatus.DEGRADED:
-                        self._degraded_strikes[candidate.id] = strikes + 1
-                    elif new_status != CandidateStatus.DEGRADED:
-                        self._degraded_strikes.pop(candidate.id, None)
 
                     self.ledger.update_candidate_status(candidate.id, new_status, reason)
                     self.ledger.save_verdict(verdict)

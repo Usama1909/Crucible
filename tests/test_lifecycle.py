@@ -61,13 +61,13 @@ check("PROVING → RETIRED on rejection", s == CandidateStatus.RETIRED)
 
 # PROVEN → DEGRADED on hard rejection
 c = make_candidate(CandidateStatus.PROVEN)
-s, _ = engine.next_status(c, make_verdict(Verdict.REJECTED))
-check("PROVEN → DEGRADED on hard rejection", s == CandidateStatus.DEGRADED)
+s, _ = engine.next_status(c, make_verdict(Verdict.REJECTED), weak_streak=1)
+check("PROVEN → DEGRADED on hard rejection (2nd weak)", s == CandidateStatus.DEGRADED)
 
 # PROVEN → DEGRADED on soft decay (UNPROVEN)
 c = make_candidate(CandidateStatus.PROVEN)
-s, _ = engine.next_status(c, make_verdict(Verdict.UNPROVEN))
-check("PROVEN → DEGRADED on soft decay (UNPROVEN)", s == CandidateStatus.DEGRADED)
+s, _ = engine.next_status(c, make_verdict(Verdict.UNPROVEN), weak_streak=1)
+check("PROVEN → DEGRADED on soft decay (2nd weak)", s == CandidateStatus.DEGRADED)
 
 # DEGRADED stays DEGRADED below strike limit
 c = make_candidate(CandidateStatus.DEGRADED)
@@ -81,8 +81,19 @@ check("DEGRADED → RETIRED at max strikes", s == CandidateStatus.RETIRED)
 
 # DEGRADED → PROVEN on recovery
 c = make_candidate(CandidateStatus.DEGRADED)
-s, _ = engine.next_status(c, make_verdict(Verdict.PROVEN))
-check("DEGRADED → PROVEN on recovery", s == CandidateStatus.PROVEN)
+s, _ = engine.next_status(c, make_verdict(Verdict.PROVEN), proven_streak=1)
+check("DEGRADED → PROVEN on recovery (2nd proven)", s == CandidateStatus.PROVEN)
+
+
+# HYSTERESIS: PROVEN holds on FIRST weak verdict
+c = make_candidate(CandidateStatus.PROVEN)
+s, r = engine.next_status(c, make_verdict(Verdict.UNPROVEN), weak_streak=0)
+check("PROVEN holds on first weak verdict", s == CandidateStatus.PROVEN)
+
+# HYSTERESIS: DEGRADED holds on FIRST proven verdict
+c = make_candidate(CandidateStatus.DEGRADED)
+s, r = engine.next_status(c, make_verdict(Verdict.PROVEN), proven_streak=0)
+check("DEGRADED holds on first proven verdict", s == CandidateStatus.DEGRADED)
 
 # PROVEN → DORMANT on context mismatch
 c = make_candidate(CandidateStatus.PROVEN)

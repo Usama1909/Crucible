@@ -18,9 +18,13 @@ class LifecycleEngine:
 
     def __init__(self,
                  min_outcomes: int = MIN_OUTCOMES_TO_EVALUATE,
-                 max_degraded_strikes: int = MAX_DEGRADED_STRIKES):
+                 max_degraded_strikes: int = MAX_DEGRADED_STRIKES,
+                 demote_strikes: int = 2,
+                 promote_confirmations: int = 2):
         self.min_outcomes         = min_outcomes
         self.max_degraded_strikes = max_degraded_strikes
+        self.demote_strikes = demote_strikes
+        self.promote_confirmations = promote_confirmations
 
     def next_status(self,
                     candidate: Candidate,
@@ -28,6 +32,8 @@ class LifecycleEngine:
                     recent_verdict: Optional[VerdictRecord] = None,
                     context_match: bool = True,
                     degraded_strikes: int = 0,
+                    weak_streak: int = 0,
+                    proven_streak: int = 0,
                     pre_dormant_status: Optional[CandidateStatus] = None
                     ) -> Tuple[CandidateStatus, str]:
 
@@ -65,18 +71,21 @@ class LifecycleEngine:
                 return CandidateStatus.RETIRED, "gate rejected — no real edge"
             return CandidateStatus.PROVING, "still proving"
 
-        # 6. PROVEN — check for decay (hard and soft)
+        # 6. PROVEN — demote only after consecutive weak verdicts (hysteresis)
         if current == CandidateStatus.PROVEN:
-            recent_weak = (recent_verdict and
-                           recent_verdict.verdict in [Verdict.REJECTED, Verdict.UNPROVEN])
-            if v in [Verdict.REJECTED, Verdict.UNPROVEN] or recent_weak:
-                return CandidateStatus.DEGRADED, "edge weakening or decayed"
+            weak_now = v in [Verdict.REJECTED, Verdict.UNPROVEN]
+            if weak_now and (weak_streak + 1) >= self.demote_strikes:
+                return CandidateStatus.DEGRADED, f"edge decayed: {weak_streak + 1} consecutive weak verdicts"
+            if weak_now:
+                return CandidateStatus.PROVEN, f"weak verdict {weak_streak + 1}/{self.demote_strikes} - holding"
             return CandidateStatus.PROVEN, "edge holding"
 
-        # 7. DEGRADED — recover or retire after max strikes
+        # 7. DEGRADED — promote after consecutive PROVEN; retire after strikes
         if current == CandidateStatus.DEGRADED:
             if v == Verdict.PROVEN:
-                return CandidateStatus.PROVEN, "edge recovered"
+                if (proven_streak + 1) >= self.promote_confirmations:
+                    return CandidateStatus.PROVEN, f"edge recovered: {proven_streak + 1} consecutive proven verdicts"
+                return CandidateStatus.DEGRADED, f"recovering {proven_streak + 1}/{self.promote_confirmations}"
             new_strikes = degraded_strikes + 1
             if new_strikes >= self.max_degraded_strikes:
                 return CandidateStatus.RETIRED, f"retired after {new_strikes} degraded strikes"
