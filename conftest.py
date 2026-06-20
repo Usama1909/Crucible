@@ -1,0 +1,11 @@
+"""
+pytest configuration for Crucible.
+Puts the project root on sys.path so tests import `crucible.*` without any
+hardcoded absolute paths. Works from any checkout location.
+"""
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
