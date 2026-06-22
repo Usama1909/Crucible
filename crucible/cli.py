@@ -73,15 +73,17 @@ def main():
         prog="crucible",
         description="Tells you which candidates are real, which are overfit, "
                     "and which to retire — and why.")
-    p.add_argument("--regime", default="NORMAL",
-                   help="market/context regime; flexes gate strictness")
     sub = p.add_subparsers(dest="cmd")
     s = sub.add_parser("scan", help="rank all candidates in a CSV")
     s.add_argument("csv")
+    s.add_argument("--regime", default="NORMAL",
+                   help="market/context regime; flexes gate strictness")
     s.set_defaults(fn=cmd_scan)
     e = sub.add_parser("explain", help="reasoning for one candidate")
     e.add_argument("csv")
     e.add_argument("name")
+    e.add_argument("--regime", default="NORMAL",
+                   help="market/context regime; flexes gate strictness")
     e.set_defaults(fn=cmd_explain)
     args = p.parse_args()
     if not getattr(args, "fn", None):

@@ -7,7 +7,7 @@ strategies, prompts, model variants, A/B tests, anything that produces
 measurable outcomes. It judges each one for *real edge vs. luck*, grades it,
 decides what to do with it, and explains the call.
 
-[![tests](https://github.com/USERNAME/crucible/actions/workflows/test.yml/badge.svg)](https://github.com/USERNAME/crucible/actions/workflows/test.yml)
+[![tests](https://github.com/Usama1909/Crucible/actions/workflows/test.yml/badge.svg)](https://github.com/Usama1909/Crucible/actions/workflows/test.yml)
 
 ---
 
@@ -59,7 +59,7 @@ overreacting to a single bad week.
 ## Install
 
 ```bash
-git clone https://github.com/USERNAME/crucible.git
+git clone https://github.com/Usama1909/Crucible.git
 cd crucible
 pip install -e .
 ```
